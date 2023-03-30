@@ -80,7 +80,102 @@ class Friends:
 some_dudes = Friends(({"a", "b"}, {"b", "c"}, {"c", "a"}, {"a", "c"}))
 print(str(some_dudes))
 some_dudes.remove({'c', 'b'})
-print(some_dudes.name_connections)
+print(str(some_dudes))
 print(some_dudes.friend_connections)
 print(some_dudes.names())
 print(some_dudes.connected('b'))
+
+
+# 2 Деканат
+#
+# спроектируйте следующую предметную область, используя объектно-ориентированный подход.
+#
+# Сотрудники деканата каждый семестр решают проблему формирования отчетных ведомостей студентов, разных групп и курсов.
+# Цель - получить информацию о среднем балле каждого студента, группы, а также предмета
+# (например, средний балл по физкультуре в группе 433 составляет 4.1).
+# Такая информация поможет сформировать список студентов, которых нужно отчислить и стипендиатов,
+# а также наиболее "проблемные" предметы.
+
+class Student:
+    def __init__(self, fio: str, course: int, group: str, **grades: int):
+        self.fio = fio
+        self.course = course
+        self.group = group
+        self.grades = grades
+        self.avg_grade = self.avg_grade()
+
+    def avg_grade(self):
+        from statistics import mean
+        return mean(self.grades.values())
+
+    def __str__(self):
+        return(f'{self.fio}, group {self.group}')
+
+
+class Dekanat:
+
+    students = []
+
+    def __init__(self, students):
+        self.students = set(students)
+
+    def group_avg_grade(self, group: str) -> float:
+        from statistics import mean
+        group_list = []
+        for student in self.students:
+            if student.group == group:
+                group_list += list(student.grades.values())
+        return mean(group_list)
+
+    def subject_avg_grade(self, subject: str) -> float:
+        from statistics import mean
+        subject_list = []
+        for student in self.students:
+            subject_list.append(student.grades[subject])
+        return mean(subject_list)
+
+    def avg_grades(self):
+        """
+        находит средний балл каждой группы по каждому предмету
+        :param students: входной список студентов
+        :return: словарь вида "группа: словарь средних оценок по предметам"
+        """
+        from collections import Counter
+        grade_count = {}
+        grade_average = {}
+
+        for student in self.students:
+            grade_count[student.group] = grade_count.setdefault(student.group, 0) + 1
+            if student.group not in grade_average.keys():
+                grade_average[student.group] = Counter()
+                continue
+            grade_average[student.group].update(student.grades)
+
+        for group, grade_set in grade_average.items():
+            for key in grade_set.keys():
+                grade_set[key] /= grade_count[group]
+            grade_average[group] = dict(grade_set)
+
+        return grade_average
+
+    def fellows(self):
+        return [str(student) for student in self.students
+                if set(student.grades.values()).intersection({0, 1, 2, 3}) == set()]
+
+    def for_dropout(self):
+        return [str(student) for student in self.students
+                if set(student.grades.values()).intersection({0, 1, 2}) != set()]
+
+
+studs = [
+    Student('Vasya', 3, '333', matan=2, phys=3, pe=4, gpo=5, python=2),
+    Student('Petya', 2, '222', matan=4, phys=5, pe=4, gpo=3, python=2),
+    Student('Lesha', 2, '222', matan=4, phys=5, pe=4, gpo=5, python=5),
+    Student('Masha', 3, '333', matan=5, phys=4, pe=5, gpo=3, python=2),
+]
+
+dekanat = Dekanat(studs)
+print(f'average grade for group 333 is {1}', dekanat.group_avg_grade('333'))
+print(dekanat.avg_grades())
+print(f'average grade for matan is {1}', dekanat.subject_avg_grade('matan'))
+print(dekanat.fellows())
